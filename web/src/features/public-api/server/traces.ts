@@ -64,12 +64,32 @@ const getQueryTimeout = (props: TraceQueryType): number => {
  */
 const validateSessionQueryOptimization = (props: TraceQueryType): void => {
   if (isSessionBasedQuery(props)) {
-    if (!props.fromTimestamp && env.LANGFUSE_WARN_UNOPTIMIZED_SESSION_QUERIES === "true") {
-      logger.warn("Session-based query without time bounds detected", {
+    // Use the session query optimizer for validation
+    const validation = validateSessionQuery({
+      sessionId: props.sessionId!,
+      projectId: props.projectId,
+      fromTimestamp: props.fromTimestamp,
+      limit: props.limit,
+      fields: props.fields
+    });
+    
+    const performance = estimateSessionQueryPerformance({
+      sessionId: props.sessionId!,
+      projectId: props.projectId,
+      fromTimestamp: props.fromTimestamp,
+      limit: props.limit,
+      fields: props.fields
+    });
+    
+    // Log warnings and recommendations if enabled
+    if (!validation.isOptimal && env.LANGFUSE_WARN_UNOPTIMIZED_SESSION_QUERIES === "true") {
+      logger.warn("Suboptimal session query detected", {
         sessionId: props.sessionId,
         projectId: props.projectId,
-        performance_impact: "high",
-        recommendation: "Add fromTimestamp parameter to improve query performance"
+        warnings: validation.warnings,
+        recommendations: validation.recommendations,
+        estimatedPerformance: performance.estimatedDuration,
+        performanceScore: performance.score
       });
     }
     
@@ -79,7 +99,9 @@ const validateSessionQueryOptimization = (props: TraceQueryType): void => {
       projectId: props.projectId,
       hasTimeFilter: Boolean(props.fromTimestamp),
       requestedFields: props.fields,
-      timeout: env.LANGFUSE_CLICKHOUSE_SESSION_QUERY_TIMEOUT_MS
+      timeout: env.LANGFUSE_CLICKHOUSE_SESSION_QUERY_TIMEOUT_MS,
+      performanceScore: performance.score,
+      estimatedDuration: performance.estimatedDuration
     });
   }
 };

@@ -4,6 +4,23 @@
 
 Session-based filtering in Langfuse can be expensive due to the database schema design where `session_id` is not part of the primary key. This guide provides best practices for optimal performance when querying traces by session.
 
+## Recent Optimizations (2024)
+
+### Automatic Timeout Management
+- **Session queries**: Extended to 60 seconds (configurable via `LANGFUSE_CLICKHOUSE_SESSION_QUERY_TIMEOUT_MS`)
+- **Regular queries**: 30 seconds default
+- **Auto-detection**: System automatically detects session-based queries and applies appropriate timeouts
+
+### Improved Database Indexes
+- **Migration 0022**: Replaces bloom filter with minmax indexes for better exact match performance
+- **Composite indexing**: Optimizes `project_id + session_id` query patterns
+- **Better granule skipping**: Reduces data scanning through improved index design
+
+### Performance Monitoring
+- **Query scoring**: 0-100 performance score for each session query
+- **Automatic recommendations**: System suggests optimizations for suboptimal queries
+- **Detailed logging**: Comprehensive monitoring of session query performance
+
 ## Performance Optimizations
 
 ### 1. Always Use Time Bounds (Critical)
