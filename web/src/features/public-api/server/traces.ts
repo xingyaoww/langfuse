@@ -12,10 +12,10 @@ import {
   env,
   logger,
 } from "@langfuse/shared/src/server";
-import { 
+import {
   optimizeSessionQuery,
   validateSessionQuery,
-  estimateSessionQueryPerformance 
+  estimateSessionQueryPerformance,
 } from "@langfuse/shared/src/server/utils/session-query-optimizer";
 import { type OrderByState } from "@langfuse/shared";
 import { snakeCase } from "lodash";
@@ -47,15 +47,19 @@ export type TraceQueryType = {
  * Session queries are more expensive and benefit from longer timeouts and optimizations
  */
 const isSessionBasedQuery = (props: TraceQueryType): boolean => {
-  return props.sessionId !== undefined && props.sessionId !== null && props.sessionId !== "";
+  return (
+    props.sessionId !== undefined &&
+    props.sessionId !== null &&
+    props.sessionId !== ""
+  );
 };
 
 /**
  * Gets the appropriate timeout for the query based on whether it's session-based
  */
 const getQueryTimeout = (props: TraceQueryType): number => {
-  return isSessionBasedQuery(props) 
-    ? env.LANGFUSE_CLICKHOUSE_SESSION_QUERY_TIMEOUT_MS 
+  return isSessionBasedQuery(props)
+    ? env.LANGFUSE_CLICKHOUSE_SESSION_QUERY_TIMEOUT_MS
     : 30000; // Default 30s timeout
 };
 
@@ -70,29 +74,32 @@ const validateSessionQueryOptimization = (props: TraceQueryType): void => {
       projectId: props.projectId,
       fromTimestamp: props.fromTimestamp,
       limit: props.limit,
-      fields: props.fields
+      fields: props.fields,
     });
-    
+
     const performance = estimateSessionQueryPerformance({
       sessionId: props.sessionId!,
       projectId: props.projectId,
       fromTimestamp: props.fromTimestamp,
       limit: props.limit,
-      fields: props.fields
+      fields: props.fields,
     });
-    
+
     // Log warnings and recommendations if enabled
-    if (!validation.isOptimal && env.LANGFUSE_WARN_UNOPTIMIZED_SESSION_QUERIES === "true") {
+    if (
+      !validation.isOptimal &&
+      env.LANGFUSE_WARN_UNOPTIMIZED_SESSION_QUERIES === "true"
+    ) {
       logger.warn("Suboptimal session query detected", {
         sessionId: props.sessionId,
         projectId: props.projectId,
         warnings: validation.warnings,
         recommendations: validation.recommendations,
         estimatedPerformance: performance.estimatedDuration,
-        performanceScore: performance.score
+        performanceScore: performance.score,
       });
     }
-    
+
     // Log session query for monitoring
     logger.info("Session-based trace query", {
       sessionId: props.sessionId,
@@ -101,7 +108,7 @@ const validateSessionQueryOptimization = (props: TraceQueryType): void => {
       requestedFields: props.fields,
       timeout: env.LANGFUSE_CLICKHOUSE_SESSION_QUERY_TIMEOUT_MS,
       performanceScore: performance.score,
-      estimatedDuration: performance.estimatedDuration
+      estimatedDuration: performance.estimatedDuration,
     });
   }
 };
@@ -115,13 +122,13 @@ export const generateTracesForPublicApi = async ({
 }) => {
   // Validate session query optimization
   validateSessionQueryOptimization(props);
-  
+
   const requestedFields = props.fields ?? TRACE_FIELD_GROUPS;
   const includeIO = requestedFields.includes("io");
   const includeScores = requestedFields.includes("scores");
   const includeObservations = requestedFields.includes("observations");
   const includeMetrics = requestedFields.includes("metrics");
-  
+
   // Get appropriate timeout for this query type
   const queryTimeout = getQueryTimeout(props);
 
@@ -277,7 +284,9 @@ export const generateTracesForPublicApi = async ({
         query,
         params: input.params,
         tags: input.tags,
-        ...(queryTimeout && { clickhouseConfigs: { request_timeout: queryTimeout } }),
+        ...(queryTimeout && {
+          clickhouseConfigs: { request_timeout: queryTimeout },
+        }),
       });
     },
     newExecution: (input) => {
@@ -337,7 +346,9 @@ export const generateTracesForPublicApi = async ({
         query,
         params: input.params,
         tags: input.tags,
-        ...(queryTimeout && { clickhouseConfigs: { request_timeout: queryTimeout } }),
+        ...(queryTimeout && {
+          clickhouseConfigs: { request_timeout: queryTimeout },
+        }),
       });
     },
   });
