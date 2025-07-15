@@ -15,6 +15,8 @@ concurrency:
 jobs:
   snyk:
     runs-on: ubuntu-latest
+    # Only run in the main repository, not in forks
+    if: github.repository == 'langfuse/langfuse' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'langfuse/langfuse')
     steps:
       - uses: actions/checkout@v2
       - name: Build a Docker image
@@ -31,10 +33,10 @@ jobs:
 
       # Workaround for https://github.com/github/codeql-action/issues/2187
       - name: Replace security-severity undefined for license-related findings
-        run: "sed -i 's/\"security-severity\": \"undefined\"/\"security-severity\": \"0\"/g' snyk.sarif"
+        run: 'sed -i ''s/"security-severity": "undefined"/"security-severity": "0"/g'' snyk.sarif'
 
       - name: Replace security-severity null for license-related findings
-        run: "sed -i 's/\"security-severity\": \"null\"/\"security-severity\": \"0\"/g' snyk.sarif"
+        run: 'sed -i ''s/"security-severity": "null"/"security-severity": "0"/g'' snyk.sarif'
 
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
@@ -53,10 +55,10 @@ jobs:
 
       # Workaround for https://github.com/github/codeql-action/issues/2187
       - name: Replace security-severity undefined for license-related findings
-        run: "sed -i 's/\"security-severity\": \"undefined\"/\"security-severity\": \"0\"/g' snyk.sarif"
+        run: 'sed -i ''s/"security-severity": "undefined"/"security-severity": "0"/g'' snyk.sarif'
 
       - name: Replace security-severity null for license-related findings
-        run: "sed -i 's/\"security-severity\": \"null\"/\"security-severity\": \"0\"/g' snyk.sarif"
+        run: 'sed -i ''s/"security-severity": "null"/"security-severity": "0"/g'' snyk.sarif'
 
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
